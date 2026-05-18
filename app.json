@@ -6,10 +6,12 @@
     "orientation": "portrait",
     "scheme": "baekae",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "icon": "./img/icon.png",
+    "newArchEnabled": false,
     "android": {
       "package": "com.baekae.mvp",
       "adaptiveIcon": {
+        "foregroundImage": "./img/icon.png",
         "backgroundColor": "#FFF9F7"
       }
     },
