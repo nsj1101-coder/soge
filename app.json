@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "백애",
+    "slug": "baekae",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "baekae",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.baekae.mvp",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF9F7"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.baekae.mvp"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "08d49be2-dc74-4267-a4f3-d24cc8bd6344"
+      }
+    }
+  }
+}
