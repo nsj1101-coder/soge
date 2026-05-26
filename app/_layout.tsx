@@ -1,21 +1,101 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AppStateProvider } from "@/state/AppStateProvider";
+import { AppStateProvider, useAppState } from "@/state/AppStateProvider";
+import { colors } from "@/constants/colors";
+
+const isWeb = Platform.OS === "web";
+
+function AuthGate() {
+  const { ready, isAuthenticated, profile } = useAppState();
+  const segments = useSegments();
+  const router = useRouter();
+
+  const needsOnboarding =
+    profile !== null &&
+    (profile.gender === null || profile.birthYear === null || profile.region.length === 0);
+
+  useEffect(() => {
+    if (!ready) return;
+    const inTabs = segments[0] === "(tabs)";
+    const onOnboarding = segments[0] === "onboarding";
+
+    if (!isAuthenticated && inTabs) {
+      router.replace("/");
+      return;
+    }
+    if (isAuthenticated && needsOnboarding && inTabs) {
+      router.replace("/onboarding");
+      return;
+    }
+    if (isAuthenticated && !needsOnboarding && onOnboarding) {
+      router.replace("/(tabs)/search");
+    }
+  }, [ready, isAuthenticated, needsOnboarding, segments, router]);
+
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.blush} />
+      </View>
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="values" />
+      <Stack.Screen name="match-success" />
+      <Stack.Screen name="chat-detail" />
+      <Stack.Screen name="store" />
+      <Stack.Screen name="profile-edit" />
+      <Stack.Screen name="search-criteria" />
+      <Stack.Screen name="search-values" />
+      <Stack.Screen name="no-acquaintance" />
+      <Stack.Screen name="account" />
+      <Stack.Screen name="help" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppStateProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="auth" />
-          <Stack.Screen name="values" />
-          <Stack.Screen name="match-success" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </AppStateProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <View style={styles.webBackdrop}>
+        <View style={styles.frame}>
+          <AppStateProvider>
+            <StatusBar style="dark" />
+            <AuthGate />
+          </AppStateProvider>
+        </View>
+      </View>
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  webBackdrop: {
+    flex: 1,
+    backgroundColor: isWeb ? colors.surfaceWarm : colors.background,
+    alignItems: "center"
+  },
+  frame: {
+    flex: 1,
+    width: "100%",
+    maxWidth: isWeb ? 480 : undefined,
+    backgroundColor: colors.background,
+    ...(isWeb && {
+      shadowColor: "#000",
+      shadowOpacity: 0.06,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 4 }
+    })
+  }
+});

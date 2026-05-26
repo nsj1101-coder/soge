@@ -8,12 +8,13 @@ import { MatchRate } from "@/components/MatchRate";
 import { ProfileOrb } from "@/components/ProfileOrb";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
-import { formatRemainingTime, calculateMatchRate } from "@/services/matching";
+import { formatRemainingTime } from "@/services/matching";
 import { useAppState } from "@/state/AppStateProvider";
 
 export default function RecommendationsScreen() {
-  const { answers, lastLikeAt, primaryRecommendation, likeCandidate } = useAppState();
+  const { lastLikeAt, primaryRecommendation, likeCandidate } = useAppState();
   const [remaining, setRemaining] = useState("지금 가능");
+  const [pending, setPending] = useState(false);
 
   const nextAvailableAt = useMemo(() => {
     if (lastLikeAt === null) {
@@ -34,28 +35,34 @@ export default function RecommendationsScreen() {
     return () => clearInterval(timer);
   }, [nextAvailableAt]);
 
-  const matchRate =
-    primaryRecommendation === null ? 0 : calculateMatchRate(answers, primaryRecommendation.values);
+  const matchRate = primaryRecommendation?.matchRate ?? 0;
 
-  const handleLike = (): void => {
+  const handleLike = async (): Promise<void> => {
     if (primaryRecommendation === null) {
       Alert.alert("추천이 없어요", "현재 확인할 추천 상대가 없습니다.");
       return;
     }
+    if (pending) return;
+    setPending(true);
+    try {
+      const result = await likeCandidate(primaryRecommendation);
 
-    const result = likeCandidate(primaryRecommendation);
+      if (result.status === "cooldown") {
+        Alert.alert("좋아요 대기 중", `${formatRemainingTime(result.nextAvailableAt)} 뒤에 다시 보낼 수 있어요.`);
+        return;
+      }
 
-    if (result.status === "cooldown") {
-      Alert.alert("좋아요 대기 중", `${formatRemainingTime(result.nextAvailableAt)} 뒤에 다시 보낼 수 있어요.`);
-      return;
+      if (result.status === "matched") {
+        router.push({ pathname: "/match-success", params: { matchId: result.match.id } });
+        return;
+      }
+
+      Alert.alert("좋아요를 보냈어요", "상대도 좋아요를 보내면 채팅이 열립니다.");
+    } catch (err) {
+      Alert.alert("오류", err instanceof Error ? err.message : "다시 시도해주세요");
+    } finally {
+      setPending(false);
     }
-
-    if (result.status === "matched") {
-      router.push({ pathname: "/match-success", params: { matchId: result.match.id } });
-      return;
-    }
-
-    Alert.alert("좋아요를 보냈어요", "상대도 좋아요를 보내면 채팅이 열립니다.");
   };
 
   if (primaryRecommendation === null) {
@@ -78,9 +85,6 @@ export default function RecommendationsScreen() {
           <Text style={styles.title}>오늘의 추천</Text>
           <Text style={styles.cooldown}>좋아요는 6시간마다 보낼 수 있어요</Text>
         </View>
-        <Pressable accessibilityRole="button" style={styles.bellBtn}>
-          <Ionicons name="notifications-outline" color={colors.ink} size={24} />
-        </Pressable>
       </View>
 
       <View style={styles.timerPill}>

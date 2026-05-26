@@ -4,9 +4,9 @@ import { colors } from "@/constants/colors";
 
 type TabIconName = keyof typeof Ionicons.glyphMap;
 
-const tabIcon = (name: TabIconName) =>
-  function Icon({ color, size }: { color: string; size: number }) {
-    return <Ionicons name={name} color={color} size={size} />;
+const tabIcon = (inactive: TabIconName, active: TabIconName) =>
+  function Icon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
+    return <Ionicons name={focused ? active : inactive} color={color} size={size} />;
   };
 
 export default function TabsLayout() {
@@ -30,12 +30,27 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="recommendations"
-        options={{ title: "오늘의 추천", tabBarIcon: tabIcon("heart-outline") }}
+        name="search"
+        options={{ title: "홈", tabBarIcon: tabIcon("search-outline", "search") }}
       />
-      <Tabs.Screen name="matches" options={{ title: "매칭", tabBarIcon: tabIcon("flower-outline") }} />
-      <Tabs.Screen name="chat" options={{ title: "채팅", tabBarIcon: tabIcon("chatbubble-outline") }} />
-      <Tabs.Screen name="profile" options={{ title: "마이페이지", tabBarIcon: tabIcon("person-outline") }} />
+      <Tabs.Screen
+        name="hearts"
+        options={{ title: "하트", tabBarIcon: tabIcon("heart-outline", "heart") }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{ title: "채팅", tabBarIcon: tabIcon("chatbubble-outline", "chatbubble") }}
+      />
+      <Tabs.Screen
+        name="shop"
+        options={{ title: "상점", tabBarIcon: tabIcon("flower-outline", "flower") }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ title: "마이", tabBarIcon: tabIcon("person-outline", "person") }}
+      />
+      <Tabs.Screen name="recommendations" options={{ href: null }} />
+      <Tabs.Screen name="matches" options={{ href: null }} />
     </Tabs>
   );
 }

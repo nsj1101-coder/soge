@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingVertical: 18
+    paddingHorizontal: 24,
+    paddingVertical: 22
   }
 });

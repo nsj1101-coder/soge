@@ -1,10 +1,25 @@
-export type Gender = "여성" | "남성" | "선택 안 함";
+export type Gender = "여성" | "남성";
 
 export type UserProfile = {
   nickname: string;
-  gender: Gender;
+  gender: Gender | null;
   ageRange: string;
+  birthYear: number | null;
   region: string;
+  bio: string;
+  introOneLine: string;
+  valueImportant: string;
+  dreamRelationship: string;
+  photoUrl: string | null;
+  pendingPhotoUrl: string | null;
+  photoRejectedAt: string | null;
+  extraPhotoUrls: string[];
+};
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  nickname: string;
 };
 
 export type ValueQuestion = {
@@ -29,6 +44,11 @@ export type Candidate = {
   tags: string[];
   values: ValueAnswer[];
   summary: string[];
+  introOneLine: string | null;
+  valueImportant: string | null;
+  dreamRelationship: string | null;
+  photoUrl: string | null;
+  matchRate?: number;
 };
 
 export type Match = {
@@ -51,3 +71,24 @@ export type LikeResult =
   | { status: "cooldown"; nextAvailableAt: string }
   | { status: "liked"; candidate: Candidate; nextAvailableAt: string }
   | { status: "matched"; match: Match; nextAvailableAt: string };
+
+export type Heart = {
+  id: string;
+  candidate: Candidate;
+  sentAt: string;
+};
+
+export type SearchSession = {
+  id: string;
+  selectedValues: string[];
+  results: Candidate[];
+  searchedAt: string;
+  opened: boolean;
+};
+
+export type FlowerPack = {
+  id: string;
+  amount: number;
+  priceLabel: string;
+  badge?: string;
+};

@@ -1,12 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { AppButton } from "@/components/AppButton";
 import { Card } from "@/components/Card";
 import { MatchRate } from "@/components/MatchRate";
 import { ProfileOrb } from "@/components/ProfileOrb";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
+import { notify } from "@/services/confirm";
 import { useAppState } from "@/state/AppStateProvider";
 
 export default function MatchesScreen() {
@@ -16,13 +17,12 @@ export default function MatchesScreen() {
     const spent = spendFlowerForNewMatch();
 
     if (!spent) {
-      Alert.alert("백애꽃 확인", "채팅 중인 매칭이 없거나 백애꽃이 부족합니다.");
+      notify("백애꽃 확인", "채팅 중인 매칭이 없거나 백애꽃이 부족합니다.");
       return;
     }
 
-    Alert.alert("백애 1송이를 사용했어요", "오늘의 추천에서 새로운 인연을 확인해보세요.", [
-      { text: "확인", onPress: () => router.push("/(tabs)/recommendations") }
-    ]);
+    notify("백애 1송이를 사용했어요", "오늘의 추천에서 새로운 인연을 확인해보세요.");
+    router.push("/(tabs)/recommendations");
   };
 
   return (
@@ -54,7 +54,13 @@ export default function MatchesScreen() {
                   </Text>
                   <Text style={styles.matchSubtitle}>{match.candidate.job}</Text>
                 </View>
-                <Pressable accessibilityRole="button" onPress={() => blockMatch(match.id)} style={styles.iconButton}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void blockMatch(match.id);
+                  }}
+                  style={styles.iconButton}
+                >
                   <Ionicons name="ban-outline" color={colors.muted} size={21} />
                 </Pressable>
               </View>

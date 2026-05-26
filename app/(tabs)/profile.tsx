@@ -1,192 +1,149 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
-import { AppButton } from "@/components/AppButton";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BrandHeader } from "@/components/BrandHeader";
 import { Card } from "@/components/Card";
-import { ChoicePill } from "@/components/ChoicePill";
 import { FlowerBadge } from "@/components/FlowerBadge";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
-import { valueQuestions } from "@/data/valueQuestions";
+import { confirm } from "@/services/confirm";
 import { useAppState } from "@/state/AppStateProvider";
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+type MenuItem = {
+  key: string;
+  label: string;
+  icon: IoniconName;
+  route: string;
+};
+
+const MENU: MenuItem[] = [
+  { key: "profile-edit", label: "내 프로필", icon: "person-outline", route: "/profile-edit" },
+  { key: "search-criteria", label: "서치 기준 설정", icon: "options-outline", route: "/search-criteria" },
+  { key: "values", label: "나의 가치관 답변", icon: "heart-outline", route: "/values" },
+  { key: "no-acquaintance", label: "아는 사람 만나지 않기", icon: "shield-outline", route: "/no-acquaintance" },
+  { key: "account", label: "내 계정 관리", icon: "key-outline", route: "/account" },
+  { key: "help", label: "도움말 및 지원", icon: "help-circle-outline", route: "/help" }
+];
+
 export default function ProfileScreen() {
-  const { profile, answers, flowerCount, matches } = useAppState();
+  const { profile, authUser, flowerCount, logOut } = useAppState();
+
+  const nickname = profile?.nickname ?? authUser?.nickname ?? "회원님";
+  const initial = nickname.slice(0, 1);
+
+  const handleLogout = async () => {
+    if (await confirm("로그아웃", "로그아웃 할까요?", "로그아웃", true)) {
+      await logOut();
+      router.replace("/");
+    }
+  };
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>마이페이지</Text>
-          <Text style={styles.subtitle}>사진 없이 마음을 보여주는 프로필</Text>
-        </View>
-        <FlowerBadge count={flowerCount} compact />
-      </View>
+    <Screen scroll={false} style={styles.screen}>
+      <BrandHeader right={<FlowerBadge count={flowerCount} compact />} />
 
-      <Card style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{profile?.nickname.slice(0, 1) ?? "백"}</Text>
-        </View>
-        <Text style={styles.nickname}>{profile?.nickname ?? "회원님"}</Text>
-        <Text style={styles.meta}>
-          {profile?.ageRange ?? "나이대 미입력"} · {profile?.region ?? "지역 미입력"} · {profile?.gender ?? "성별 미입력"}
-        </Text>
-        <View style={styles.stats}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{answers.length}</Text>
-            <Text style={styles.statLabel}>답변</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <Card style={styles.userCard}>
+          <View style={styles.avatar}>
+            {profile?.photoUrl ? (
+              <Image source={{ uri: profile.photoUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{initial}</Text>
+            )}
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{matches.length}</Text>
-            <Text style={styles.statLabel}>매칭</Text>
+          <View style={styles.userInfo}>
+            <Text style={styles.nickname}>{nickname}</Text>
+            {(profile?.birthYear !== null && profile?.birthYear !== undefined) || profile?.region ? (
+              <Text style={styles.userMeta}>
+                {profile?.birthYear ? `${profile.birthYear}년생` : ""}
+                {profile?.birthYear && profile?.region ? " · " : ""}
+                {profile?.region ?? ""}
+              </Text>
+            ) : null}
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{flowerCount}</Text>
-            <Text style={styles.statLabel}>백애꽃</Text>
-          </View>
-        </View>
-      </Card>
+        </Card>
 
-      <Card style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>가치관 답변</Text>
-          <AppButton label="수정" variant="ghost" onPress={() => router.push("/values")} style={styles.smallButton} />
-        </View>
-        {valueQuestions.map((question) => {
-          const answer = answers.find((item) => item.questionId === question.id);
-
-          return (
-            <View key={question.id} style={styles.answerRow}>
-              <View style={styles.answerTitleWrap}>
-                <Ionicons name="heart-outline" color={colors.blushDark} size={17} />
-                <Text style={styles.answerTitle}>{question.title}</Text>
+        <Card style={styles.menuCard}>
+          {MENU.map((item, idx) => (
+            <Pressable
+              key={item.key}
+              onPress={() => router.push(item.route as never)}
+              style={[styles.menuRow, idx > 0 && styles.menuRowBorder]}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name={item.icon} size={20} color={colors.blush} />
               </View>
-              <ChoicePill label={answer?.option ?? "미답변"} selected onPress={() => router.push("/values")} />
-            </View>
-          );
-        })}
-      </Card>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+            </Pressable>
+          ))}
+        </Card>
 
-      <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>안전 기능</Text>
-        <View style={styles.safeRow}>
-          <Ionicons name="shield-checkmark-outline" color={colors.success} size={22} />
-          <Text style={styles.safeText}>매칭 차단, 채팅 메시지 신고, 부적절한 대화 숨김을 MVP에 포함했습니다.</Text>
-        </View>
-      </Card>
+        <Pressable onPress={handleLogout} style={styles.logoutBtn}>
+          <Ionicons name="log-out-outline" size={18} color={colors.muted} />
+          <Text style={styles.logoutText}>로그아웃</Text>
+        </Pressable>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  screen: { paddingHorizontal: 0, paddingVertical: 0 },
+  content: { padding: 22, gap: 14, paddingBottom: 40 },
+
+  userCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 22
-  },
-  title: {
-    color: colors.ink,
-    fontSize: 24,
-    fontWeight: "800"
-  },
-  subtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 7
-  },
-  profileCard: {
     alignItems: "center",
-    gap: 10
+    gap: 14,
+    padding: 18
   },
   avatar: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surfaceWarm,
     borderWidth: 1,
-    borderColor: colors.line
+    borderColor: colors.line,
+    overflow: "hidden"
   },
-  avatarText: {
-    color: colors.blushDark,
-    fontSize: 28,
-    fontWeight: "800"
-  },
-  nickname: {
-    color: colors.ink,
-    fontSize: 20,
-    fontWeight: "800"
-  },
-  meta: {
-    color: colors.muted,
-    fontSize: 13
-  },
-  stats: {
+  avatarText: { color: colors.ink, fontSize: 24, fontWeight: "800" },
+  avatarImage: { width: "100%", height: "100%", borderRadius: 32 },
+  userInfo: { flex: 1, gap: 4 },
+  nickname: { color: colors.ink, fontSize: 18, fontWeight: "800" },
+  userMeta: { color: colors.muted, fontSize: 13 },
+  email: { color: colors.muted, fontSize: 13 },
+
+  menuCard: { padding: 0, overflow: "hidden" },
+  menuRow: {
     flexDirection: "row",
-    width: "100%",
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16
+  },
+  menuRowBorder: { borderTopWidth: 1, borderTopColor: colors.line },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceWarm
+  },
+  menuLabel: { flex: 1, color: colors.ink, fontSize: 15, fontWeight: "600" },
+
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    marginTop: 8
+    paddingVertical: 16,
+    marginTop: 6
   },
-  stat: {
-    flex: 1,
-    alignItems: "center",
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12
-  },
-  statValue: {
-    color: colors.blushDark,
-    fontSize: 20,
-    fontWeight: "800"
-  },
-  statLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 3
-  },
-  section: {
-    marginTop: 14,
-    gap: 14
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between"
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontSize: 17,
-    fontWeight: "800"
-  },
-  smallButton: {
-    minHeight: 38,
-    paddingHorizontal: 10
-  },
-  answerRow: {
-    gap: 8
-  },
-  answerTitleWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7
-  },
-  answerTitle: {
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: "700"
-  },
-  safeRow: {
-    flexDirection: "row",
-    gap: 10
-  },
-  safeText: {
-    flex: 1,
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 20
-  }
+  logoutText: { color: colors.muted, fontSize: 14, fontWeight: "600" }
 });

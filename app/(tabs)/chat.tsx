@@ -1,245 +1,110 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BrandHeader } from "@/components/BrandHeader";
 import { Card } from "@/components/Card";
-import { FlowerBadge } from "@/components/FlowerBadge";
 import { ProfileOrb } from "@/components/ProfileOrb";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
 import { useAppState } from "@/state/AppStateProvider";
 
-export default function ChatScreen() {
-  const { matches, messages, flowerCount, sendChatMessage, reportMessage } = useAppState();
-  const [draft, setDraft] = useState("");
-  const activeMatch = matches[0] ?? null;
-  const activeMessages = useMemo(
-    () => messages.filter((message) => message.matchId === activeMatch?.id),
-    [activeMatch?.id, messages]
-  );
+export default function ChatListScreen() {
+  const { matches, messages } = useAppState();
 
-  const submit = (): void => {
-    if (activeMatch === null) {
-      return;
-    }
-
-    sendChatMessage(activeMatch.id, draft);
-    setDraft("");
+  const lastMessage = (matchId: string) => {
+    const msgs = messages.filter((m) => m.matchId === matchId);
+    return msgs[msgs.length - 1] ?? null;
   };
 
-  if (activeMatch === null) {
-    return (
-      <Screen>
-        <Text style={styles.title}>채팅</Text>
-        <Card style={styles.emptyCard}>
-          <Ionicons name="chatbubble-outline" color={colors.blush} size={38} />
-          <Text style={styles.emptyTitle}>매칭 후 채팅이 열려요</Text>
-          <Text style={styles.emptyText}>서로 좋아요를 보내면 이곳에서 대화를 시작할 수 있습니다.</Text>
-        </Card>
-      </Screen>
-    );
-  }
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+    if (diffMin < 1) return "방금";
+    if (diffMin < 60) return `${diffMin}분 전`;
+    if (diffMin < 1440) return `${Math.floor(diffMin / 60)}시간 전`;
+    return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboard}>
-      <Screen scroll={false} style={styles.screen}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" onPress={() => {}} style={styles.backBtn}>
-            <Ionicons name="chevron-back" color={colors.ink} size={24} />
+    <Screen scroll={false} style={styles.screen}>
+      <BrandHeader
+        right={
+          <Pressable accessibilityRole="button" style={styles.iconBtn}>
+            <Ionicons name="create-outline" size={22} color={colors.ink} />
           </Pressable>
-          <Text style={styles.title}>채팅</Text>
-          <View style={{ flex: 1 }} />
-          <Pressable accessibilityRole="button" style={styles.moreBtn}>
-            <Ionicons name="ellipsis-horizontal" color={colors.ink} size={22} />
-          </Pressable>
-        </View>
-        <View style={styles.subHeader}>
-          <View style={styles.matchRatePill}>
-            <Text style={styles.matchRate}>매칭률 {activeMatch.matchRate}%</Text>
-          </View>
-          <FlowerBadge count={flowerCount} compact />
-        </View>
+        }
+      />
 
-        <View style={styles.notice}>
-          <Ionicons name="flower-outline" color={colors.infoBannerText} size={18} />
-          <Text style={styles.noticeText}>새로운 매칭을 시작하면 백애 1송이가 차감됩니다.</Text>
-        </View>
-
-        <View style={styles.messages}>
-          {activeMessages.map((message) => (
-            <Pressable
-              key={message.id}
-              onLongPress={() =>
-                Alert.alert("메시지 신고", "이 메시지를 신고하고 화면에서 숨길까요?", [
-                  { text: "취소", style: "cancel" },
-                  { text: "신고", style: "destructive", onPress: () => reportMessage(message.id) }
-                ])
-              }
-              style={[styles.bubble, message.sender === "me" ? styles.myBubble : styles.otherBubble]}
-            >
-              <Text style={[styles.messageText, message.sender === "me" && styles.myText]}>{message.body}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={styles.inputBar}>
-          <Pressable accessibilityLabel="첨부" accessibilityRole="button" style={styles.plusButton}>
-            <Ionicons name="add" color={colors.muted} size={24} />
-          </Pressable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="메시지를 입력하세요"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-          />
-          <Pressable accessibilityLabel="메시지 보내기" accessibilityRole="button" onPress={submit} style={styles.sendButton}>
-            <Ionicons name="send" color={colors.surface} size={19} />
-          </Pressable>
-        </View>
-      </Screen>
-    </KeyboardAvoidingView>
+      {matches.length === 0 ? (
+        <ScrollView contentContainerStyle={styles.emptyWrap}>
+          <Card style={styles.emptyCard}>
+            <Ionicons name="chatbubble-outline" color={colors.blush} size={38} />
+            <Text style={styles.emptyTitle}>아직 채팅이 없어요</Text>
+            <Text style={styles.emptyText}>홈에서 마음에 드는 상대에게 꽃을 보내고{"\n"}서로 매칭되면 채팅이 시작돼요.</Text>
+          </Card>
+        </ScrollView>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {matches.map((match) => {
+            const last = lastMessage(match.id);
+            return (
+              <Pressable
+                key={match.id}
+                onPress={() => router.push({ pathname: "/chat-detail", params: { matchId: match.id } })}
+                style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+              >
+                <ProfileOrb initial={match.candidate.initial} size={52} />
+                <View style={styles.rowInfo}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.rowName}>{match.candidate.ageRange} · {match.candidate.region}</Text>
+                    {last && <Text style={styles.rowTime}>{formatTime(last.sentAt)}</Text>}
+                  </View>
+                  <Text style={styles.rowJob}>{match.candidate.job}</Text>
+                  {last && (
+                    <Text style={styles.rowPreview} numberOfLines={1}>{last.body}</Text>
+                  )}
+                </View>
+                <View style={styles.matchRatePill}>
+                  <Text style={styles.matchRateText}>{match.matchRate}%</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboard: {
-    flex: 1,
-    backgroundColor: colors.background
-  },
-  screen: {
-    paddingBottom: 12
-  },
-  header: {
+  screen: { paddingHorizontal: 0, paddingVertical: 0 },
+  iconBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -8
-  },
-  moreBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  title: {
-    color: colors.ink,
-    fontSize: 22,
-    fontWeight: "800"
-  },
-  subHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 10
-  },
+  rowPressed: { backgroundColor: colors.background },
+  rowInfo: { flex: 1, gap: 3 },
+  rowTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  rowName: { color: colors.ink, fontSize: 15, fontWeight: "700" },
+  rowJob: { color: colors.muted, fontSize: 12 },
+  rowPreview: { color: colors.body, fontSize: 13, marginTop: 2 },
+  rowTime: { color: colors.muted, fontSize: 11 },
   matchRatePill: {
     backgroundColor: colors.surfaceWarm,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.blushLight,
-    paddingHorizontal: 12,
-    paddingVertical: 5
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4
   },
-  matchRate: {
-    color: colors.blushDark,
-    fontSize: 13,
-    fontWeight: "800"
-  },
-  notice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: colors.infoBanner,
-    borderWidth: 1,
-    borderColor: colors.infoBannerBorder,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12
-  },
-  noticeText: {
-    flex: 1,
-    color: colors.infoBannerText,
-    fontSize: 12,
-    lineHeight: 18
-  },
-  messages: {
-    flex: 1,
-    justifyContent: "flex-end",
-    gap: 10,
-    paddingVertical: 18
-  },
-  bubble: {
-    maxWidth: "78%",
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 11
-  },
-  myBubble: {
-    alignSelf: "flex-end",
-    backgroundColor: colors.blushLight
-  },
-  otherBubble: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.chatBubble
-  },
-  messageText: {
-    color: colors.ink,
-    fontSize: 14,
-    lineHeight: 20
-  },
-  myText: {
-    color: colors.ink
-  },
-  inputBar: {
-    minHeight: 54,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 28,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 8
-  },
-  plusButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  input: {
-    flex: 1,
-    color: colors.ink,
-    fontSize: 14
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.blush
-  },
-  emptyCard: {
-    marginTop: 22,
-    alignItems: "center",
-    gap: 12
-  },
-  emptyTitle: {
-    color: colors.ink,
-    fontSize: 18,
-    fontWeight: "800"
-  },
-  emptyText: {
-    color: colors.muted,
-    textAlign: "center",
-    lineHeight: 21
-  }
+  matchRateText: { color: colors.blushDark, fontSize: 11, fontWeight: "800" },
+  emptyWrap: { flex: 1, justifyContent: "center", padding: 22 },
+  emptyCard: { alignItems: "center", gap: 12 },
+  emptyTitle: { color: colors.ink, fontSize: 18, fontWeight: "800" },
+  emptyText: { color: colors.muted, textAlign: "center", lineHeight: 21, fontSize: 13 }
 });

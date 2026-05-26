@@ -3,6 +3,7 @@ import { colors } from "@/constants/colors";
 
 type MatchRateProps = {
   rate: number;
+  compact?: boolean;
 };
 
 const getRateColor = (rate: number): string => {
@@ -11,8 +12,17 @@ const getRateColor = (rate: number): string => {
   return colors.muted;
 };
 
-export const MatchRate = ({ rate }: MatchRateProps) => {
+export const MatchRate = ({ rate, compact = false }: MatchRateProps) => {
   const rateColor = getRateColor(rate);
+
+  if (compact) {
+    return (
+      <View style={styles.compactWrap}>
+        <Text style={[styles.compactRate, { color: rateColor }]}>{rate}%</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap}>
       <Text style={[styles.label, { color: rateColor }]}>가치관 매칭률</Text>
@@ -40,6 +50,18 @@ const styles = StyleSheet.create({
   rate: {
     marginTop: 2,
     fontSize: 48,
+    fontWeight: "800"
+  },
+  compactWrap: {
+    backgroundColor: colors.surfaceWarm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.blushLight,
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  compactRate: {
+    fontSize: 13,
     fontWeight: "800"
   }
 });

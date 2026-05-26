@@ -18,7 +18,11 @@ export const candidates: Candidate[] = [
       { questionId: "money", option: "계획적" },
       { questionId: "pace", option: "천천히" }
     ],
-    summary: ["차분함", "성실", "대화 중시", "결혼은 천천히", "가족 중심", "서로 존중"]
+    summary: ["차분함", "성실", "대화 중시", "결혼은 천천히", "가족 중심", "서로 존중"],
+    introOneLine: null,
+    valueImportant: null,
+    dreamRelationship: null,
+    photoUrl: null
   },
   {
     id: "jiyu",
@@ -37,7 +41,11 @@ export const candidates: Candidate[] = [
       { questionId: "money", option: "상황에 따라" },
       { questionId: "pace", option: "자연스럽게" }
     ],
-    summary: ["감성적", "취향 뚜렷", "자유로움", "산책 선호", "대화형", "배려 깊음"]
+    summary: ["감성적", "취향 뚜렷", "자유로움", "산책 선호", "대화형", "배려 깊음"],
+    introOneLine: null,
+    valueImportant: null,
+    dreamRelationship: null,
+    photoUrl: null
   },
   {
     id: "min",
@@ -56,6 +64,10 @@ export const candidates: Candidate[] = [
       { questionId: "money", option: "저축 중시" },
       { questionId: "pace", option: "대화를 많이" }
     ],
-    summary: ["안정적", "계획형", "진지함", "비흡연", "저축 중시", "차분함"]
+    summary: ["안정적", "계획형", "진지함", "비흡연", "저축 중시", "차분함"],
+    introOneLine: null,
+    valueImportant: null,
+    dreamRelationship: null,
+    photoUrl: null
   }
 ];
