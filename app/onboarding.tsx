@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -19,6 +18,7 @@ import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
 import { uploadPhoto } from "@/services/api";
 import { notify } from "@/services/confirm";
+import { pickImage } from "@/services/imagePicker";
 import { useAppState } from "@/state/AppStateProvider";
 import { Gender } from "@/types/domain";
 
@@ -115,27 +115,11 @@ export default function OnboardingScreen() {
   const pickPhoto = async () => {
     if (uploading) return;
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        notify("권한이 필요해요", "사진 접근 권한을 허용해주세요.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
-      setPhotoLocalUri(asset.uri);
+      const picked = await pickImage();
+      if (picked === null) return;
+      setPhotoLocalUri(picked.uri);
       setUploading(true);
-      const { url } = await uploadPhoto({
-        uri: asset.uri,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-        file: asset.file ?? null
-      });
+      const { url } = await uploadPhoto(picked);
       setPhotoUrl(url);
     } catch (err) {
       setPhotoLocalUri(null);
@@ -268,7 +252,7 @@ export default function OnboardingScreen() {
                 {previewUri ? (
                   <Image source={{ uri: previewUri }} style={styles.photoImage} />
                 ) : (
-                  <Text style={styles.photoInitial}>{profile?.nickname?.charAt(0) ?? "?"}</Text>
+                  <Ionicons name="camera-outline" size={42} color={colors.muted} />
                 )}
                 {uploading && (
                   <View style={styles.photoOverlay}>
@@ -424,7 +408,6 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   photoImage: { width: "100%", height: "100%" },
-  photoInitial: { color: colors.blushDark, fontSize: 52, fontWeight: "800" },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",

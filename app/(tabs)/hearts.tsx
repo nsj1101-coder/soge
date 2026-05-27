@@ -24,8 +24,8 @@ function HeartCard({ heart, onSendFlower }: { heart: Heart; onSendFlower?: (hear
         <View style={styles.cardTop}>
           <ProfileOrb initial={heart.candidate.initial} size={56} />
           <View style={styles.cardInfo}>
-            <Text style={styles.cardMeta}>{heart.candidate.ageRange} · {heart.candidate.region}</Text>
-            <Text style={styles.cardJob}>{heart.candidate.job}</Text>
+            <Text style={styles.cardMeta}>{heart.candidate.nickname}</Text>
+            <Text style={styles.cardJob}>{heart.candidate.ageRange}{heart.candidate.region ? ` · ${heart.candidate.region}` : ""}</Text>
             <View style={styles.tags}>
               {heart.candidate.tags.slice(0, 3).map((tag) => (
                 <Text key={tag} style={styles.tag}>#{tag}</Text>

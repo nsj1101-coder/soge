@@ -44,7 +44,8 @@ type SearchResultEnvelope =
 export type SearchCriteria = {
   selectedValues: string[];
   gender: string | null;
-  ageRanges: string[];
+  birthYearMin: number | null;
+  birthYearMax: number | null;
   regions: string[];
 };
 
@@ -67,10 +68,14 @@ type AppStateContextValue = {
   searchHistory: SearchSession[];
   selectedSearchValues: string[];
   setSelectedSearchValues: (values: string[]) => void;
+  viewingCandidate: Candidate | null;
+  setViewingCandidate: (candidate: Candidate | null) => void;
   selectedSearchGender: string | null;
   setSelectedSearchGender: (gender: string | null) => void;
-  selectedSearchAgeRanges: string[];
-  setSelectedSearchAgeRanges: (ageRanges: string[]) => void;
+  selectedSearchBirthYearMin: number;
+  setSelectedSearchBirthYearMin: (year: number) => void;
+  selectedSearchBirthYearMax: number;
+  setSelectedSearchBirthYearMax: (year: number) => void;
   selectedSearchRegions: string[];
   setSelectedSearchRegions: (regions: string[]) => void;
   hasCompletedProfile: boolean;
@@ -149,8 +154,10 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
   const [receivedHearts, setReceivedHearts] = useState<Heart[]>([]);
   const [searchHistory, setSearchHistory] = useState<SearchSession[]>([]);
   const [selectedSearchValues, setSelectedSearchValues] = useState<string[]>([]);
+  const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(null);
   const [selectedSearchGender, setSelectedSearchGender] = useState<string | null>(null);
-  const [selectedSearchAgeRanges, setSelectedSearchAgeRanges] = useState<string[]>([]);
+  const [selectedSearchBirthYearMin, setSelectedSearchBirthYearMin] = useState<number>(1960);
+  const [selectedSearchBirthYearMax, setSelectedSearchBirthYearMax] = useState<number>(2010);
   const [selectedSearchRegions, setSelectedSearchRegions] = useState<string[]>([]);
 
   const meSetters = {
@@ -392,10 +399,14 @@ export const AppStateProvider = ({ children }: PropsWithChildren) => {
     searchHistory,
     selectedSearchValues,
     setSelectedSearchValues,
+    viewingCandidate,
+    setViewingCandidate,
     selectedSearchGender,
     setSelectedSearchGender,
-    selectedSearchAgeRanges,
-    setSelectedSearchAgeRanges,
+    selectedSearchBirthYearMin,
+    setSelectedSearchBirthYearMin,
+    selectedSearchBirthYearMax,
+    setSelectedSearchBirthYearMax,
     selectedSearchRegions,
     setSelectedSearchRegions,
     hasCompletedProfile: profile !== null && answers.length > 0,

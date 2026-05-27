@@ -57,10 +57,10 @@ export default function ChatListScreen() {
                 <ProfileOrb initial={match.candidate.initial} size={52} />
                 <View style={styles.rowInfo}>
                   <View style={styles.rowTop}>
-                    <Text style={styles.rowName}>{match.candidate.ageRange} · {match.candidate.region}</Text>
+                    <Text style={styles.rowName}>{match.candidate.nickname}</Text>
                     {last && <Text style={styles.rowTime}>{formatTime(last.sentAt)}</Text>}
                   </View>
-                  <Text style={styles.rowJob}>{match.candidate.job}</Text>
+                  <Text style={styles.rowJob}>{match.candidate.ageRange}{match.candidate.region ? ` · ${match.candidate.region}` : ""}</Text>
                   {last && (
                     <Text style={styles.rowPreview} numberOfLines={1}>{last.body}</Text>
                   )}

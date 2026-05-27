@@ -1,21 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BrandHeader } from "@/components/BrandHeader";
 import { notify } from "@/services/confirm";
 import { AppButton } from "@/components/AppButton";
 import { Card } from "@/components/Card";
-import { MatchRate } from "@/components/MatchRate";
 import { ProfileCompleteness } from "@/components/ProfileCompleteness";
 import { ProfileOrb } from "@/components/ProfileOrb";
 import { Screen } from "@/components/Screen";
-import { colors, shadow } from "@/constants/colors";
+import { colors } from "@/constants/colors";
 import { formatRemainingTime } from "@/services/matching";
 import { useAppState } from "@/state/AppStateProvider";
 import { Candidate, SearchSession } from "@/types/domain";
-
-type CardMode = "front" | "detail";
 
 const MIN_VALUES = 0;
 
@@ -40,11 +37,10 @@ export default function SearchScreen() {
     selectedSearchValues,
     setSelectedSearchValues,
     selectedSearchGender,
-    setSelectedSearchGender,
-    selectedSearchAgeRanges,
-    setSelectedSearchAgeRanges,
+    selectedSearchBirthYearMin,
+    selectedSearchBirthYearMax,
     selectedSearchRegions,
-    setSelectedSearchRegions
+    setViewingCandidate
   } = useAppState();
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
@@ -52,8 +48,6 @@ export default function SearchScreen() {
   // result state
   const [mode, setMode] = useState<"select" | "result">("select");
   const [resultSession, setResultSession] = useState<SearchSession | null>(null);
-  const [cardIndex, setCardIndex] = useState(0);
-  const [cardMode, setCardMode] = useState<CardMode>("front");
 
   const [searchRemaining, setSearchRemaining] = useState("");
   const [likeRemaining, setLikeRemaining] = useState("");
@@ -95,7 +89,8 @@ export default function SearchScreen() {
       const result = await doSearch({
         selectedValues: selectedSearchValues,
         gender: selectedSearchGender,
-        ageRanges: selectedSearchAgeRanges,
+        birthYearMin: selectedSearchBirthYearMin,
+        birthYearMax: selectedSearchBirthYearMax,
         regions: selectedSearchRegions
       });
       if (!result.ok) {
@@ -103,8 +98,6 @@ export default function SearchScreen() {
         return;
       }
       setResultSession(result.session);
-      setCardIndex(0);
-      setCardMode("front");
       setMode("result");
     } catch (err) {
       notify("오류", err instanceof Error ? err.message : "다시 시도해주세요");
@@ -138,9 +131,6 @@ export default function SearchScreen() {
       setSending(false);
     }
   };
-
-  const currentCandidate = resultSession?.results[cardIndex] ?? null;
-  const currentMatchRate = currentCandidate?.matchRate ?? 0;
 
   const resetToSelect = () => {
     setMode("select");
@@ -186,7 +176,7 @@ export default function SearchScreen() {
             <CriteriaRow label="성별" value={selectedSearchGender ?? "무관"} />
             <CriteriaRow
               label="나이대"
-              value={selectedSearchAgeRanges.length === 0 ? "무관" : selectedSearchAgeRanges.join(", ")}
+              value={`${selectedSearchBirthYearMin}~${selectedSearchBirthYearMax}년생`}
             />
             <CriteriaRow
               label="지역"
@@ -218,82 +208,57 @@ export default function SearchScreen() {
         </ScrollView>
       )}
 
-      {mode === "result" && resultSession !== null && currentCandidate !== null && (
+      {mode === "result" && resultSession !== null && (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.resultContent}>
-          <View style={styles.cardTabs}>
-            {resultSession.results.map((c, idx) => (
+          <Text style={styles.resultTitle}>새로운 인연 {resultSession.results.length}명</Text>
+
+          {resultSession.results.map((c) => (
+            <Card key={c.id} style={styles.resultCard}>
               <Pressable
-                key={c.id}
-                onPress={() => { setCardIndex(idx); setCardMode("front"); }}
-                style={[styles.cardTabItem, cardIndex === idx && styles.cardTabActive]}
+                onPress={() => {
+                  setViewingCandidate(c);
+                  router.push(`/candidate/${c.id}` as never);
+                }}
+                style={styles.resultRow}
               >
-                <ProfileOrb initial={c.initial} size={32} />
-                <Text style={[styles.cardTabLabel, cardIndex === idx && styles.cardTabLabelActive]}>
-                  {c.ageRange.split("~")[0].trim()}세
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Pressable onPress={() => setCardMode((m) => m === "front" ? "detail" : "front")}>
-            <Card style={styles.profileCard}>
-              {cardMode === "front" && (
-                <>
-                  <ProfileOrb initial={currentCandidate.initial} size={88} />
-                  <Text style={styles.profileMeta}>{currentCandidate.ageRange} · {currentCandidate.region}</Text>
-                  <Text style={styles.profileJob}>{currentCandidate.job}</Text>
-                  <View style={styles.tags}>
-                    {currentCandidate.tags.map((tag) => (
-                      <Text key={tag} style={styles.tag}>#{tag}</Text>
-                    ))}
+                {c.photoUrl !== null ? (
+                  <Image source={{ uri: c.photoUrl }} style={styles.resultPhoto} />
+                ) : (
+                  <View style={styles.resultPhotoFallback}>
+                    <ProfileOrb initial={c.initial} size={64} />
                   </View>
-                  <View style={styles.divider} />
-                  <View style={styles.summaryWrap}>
-                    {currentCandidate.summary.map((item) => (
-                      <Text key={item} style={styles.summaryChip}>{item}</Text>
-                    ))}
-                  </View>
-                  <MatchRate rate={currentMatchRate} />
-                  <View style={styles.tapHint}>
-                    <Ionicons name="chevron-down" size={14} color={colors.muted} />
-                    <Text style={styles.tapHintText}>탭하면 자기소개 · 상세 가치관 보기</Text>
-                  </View>
-                </>
-              )}
-              {cardMode === "detail" && (
-                <>
-                  <Text style={styles.detailTitle}>자기소개</Text>
-                  <Text style={styles.detailBio}>
-                    {`${currentCandidate.region}에 사는 ${currentCandidate.job}입니다. ${currentCandidate.tags.slice(0, 2).join(", ")}을 즐기며, 진지한 만남을 원합니다.`}
-                  </Text>
-                  <View style={styles.divider} />
-                  <Text style={styles.detailTitle}>상세 가치관</Text>
-                  {currentCandidate.values.map((v) => (
-                    <View key={v.questionId} style={styles.valueRow}>
-                      <Ionicons name="heart-outline" size={14} color={colors.blush} />
-                      <Text style={styles.valueText}>{v.option}</Text>
+                )}
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultNick}>{c.nickname}</Text>
+                  <Text style={styles.resultMeta}>{c.ageRange}{c.region ? ` · ${c.region}` : ""}</Text>
+                  {c.tags.length > 0 && (
+                    <View style={styles.resultTags}>
+                      {c.tags.slice(0, 3).map((t) => (
+                        <Text key={t} style={styles.resultTag}>#{t}</Text>
+                      ))}
                     </View>
-                  ))}
-                  <View style={styles.tapHint}>
-                    <Ionicons name="chevron-up" size={14} color={colors.muted} />
-                    <Text style={styles.tapHintText}>탭하면 돌아가기</Text>
-                  </View>
-                </>
-              )}
+                  )}
+                </View>
+                <View style={styles.resultRate}>
+                  <Text style={styles.resultRateNum}>{c.matchRate ?? 0}</Text>
+                  <Text style={styles.resultRateSuffix}>%</Text>
+                </View>
+              </Pressable>
+              <View style={styles.resultActions}>
+                <AppButton
+                  label={sending ? "보내는 중…" : "꽃 보내기"}
+                  onPress={() => handleSendFlower(c)}
+                  disabled={sending}
+                  style={styles.flowerBtn}
+                />
+              </View>
             </Card>
-          </Pressable>
+          ))}
 
-          <View style={styles.actions}>
-            <Pressable onPress={resetToSelect} style={styles.circleBtn} accessibilityRole="button">
-              <Ionicons name="close" color={colors.muted} size={24} />
-            </Pressable>
-            <AppButton
-              label={sending ? "보내는 중…" : "꽃 보내기"}
-              onPress={() => handleSendFlower(currentCandidate)}
-              disabled={sending}
-              style={styles.flowerBtn}
-            />
-          </View>
+          <Pressable onPress={resetToSelect} style={styles.newSearchBtn}>
+            <Ionicons name="refresh" size={14} color={colors.muted} />
+            <Text style={styles.newSearchText}>새로운 서치하기 (현재 카드들이 사라져요)</Text>
+          </Pressable>
         </ScrollView>
       )}
 
@@ -386,50 +351,36 @@ const styles = StyleSheet.create({
 
   searchBtn: {},
 
-  resultContent: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 32 },
-  cardTabs: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  cardTabItem: {
-    flex: 1,
+  resultContent: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 32, gap: 12 },
+  resultTitle: { color: colors.ink, fontSize: 17, fontWeight: "800", marginBottom: 4 },
+  resultCard: { padding: 14, gap: 12 },
+  resultRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  resultPhoto: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: colors.surfaceWarm
+  },
+  resultPhotoFallback: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: colors.surfaceWarm,
+    alignItems: "center", justifyContent: "center", overflow: "hidden"
+  },
+  resultInfo: { flex: 1, gap: 4 },
+  resultNick: { color: colors.ink, fontSize: 16, fontWeight: "800" },
+  resultMeta: { color: colors.muted, fontSize: 12 },
+  resultTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 2 },
+  resultTag: { color: colors.blushDark, fontSize: 11, fontWeight: "700" },
+  resultRate: { alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  resultRateNum: { color: colors.blush, fontSize: 22, fontWeight: "800" },
+  resultRateSuffix: { color: colors.blush, fontSize: 10, fontWeight: "700", marginTop: -2 },
+  resultActions: { gap: 8 },
+  newSearchBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    padding: 12,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 8
   },
-  cardTabActive: { borderColor: colors.blush, backgroundColor: colors.surfaceWarm },
-  cardTabLabel: { color: colors.muted, fontSize: 13, fontWeight: "600" },
-  cardTabLabelActive: { color: colors.blushDark },
-  profileCard: { alignItems: "center", gap: 12, marginBottom: 20 },
-  profileMeta: { color: colors.ink, fontSize: 17, fontWeight: "800" },
-  profileJob: { color: colors.body, fontSize: 14 },
-  tags: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 },
-  tag: { color: colors.muted, fontSize: 12, fontWeight: "700" },
-  divider: { width: "100%", height: 1, backgroundColor: colors.line },
-  summaryWrap: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8 },
-  summaryChip: {
-    color: colors.blushDark,
-    backgroundColor: colors.blushLight,
-    borderRadius: 17,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    fontSize: 12,
-    fontWeight: "600"
-  },
-  tapHint: { flexDirection: "row", alignItems: "center", gap: 4 },
-  tapHintText: { color: colors.muted, fontSize: 11 },
-  detailTitle: { color: colors.ink, fontSize: 15, fontWeight: "800", alignSelf: "flex-start" },
-  detailBio: { color: colors.body, fontSize: 14, lineHeight: 22, alignSelf: "flex-start" },
-  valueRow: { flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "flex-start" },
-  valueText: { color: colors.body, fontSize: 14 },
-  actions: { flexDirection: "row", alignItems: "center", gap: 12 },
-  circleBtn: {
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.line, ...shadow
-  },
-  flowerBtn: { flex: 1 }
+  newSearchText: { color: colors.muted, fontSize: 12, fontWeight: "600" },
+  flowerBtn: {}
 });

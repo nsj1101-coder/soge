@@ -15,13 +15,29 @@
         "backgroundColor": "#FFF9F7"
       }
     },
-    "ios": {
-      "bundleIdentifier": "com.baekae.mvp"
-    },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          },
+          "ios": {
+            "flipper": false
+          }
+        }
+      ]
     ],
+    "ios": {
+      "bundleIdentifier": "com.baekae.mvp",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
     "experiments": {
       "typedRoutes": true
     },

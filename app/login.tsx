@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { AppButton } from "@/components/AppButton";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
+import { notify } from "@/services/confirm";
 import { useAppState } from "@/state/AppStateProvider";
 
 export default function LoginScreen() {
@@ -13,25 +14,35 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const canLogin = email.includes("@") && password.length >= 4 && !submitting;
 
   const handleLogin = async () => {
     if (!canLogin) return;
+    setEmailError(null);
+    setPasswordError(null);
     setSubmitting(true);
     try {
       await logIn({ email: email.trim(), password });
       router.replace("/(tabs)/search");
     } catch (err) {
       const code = err instanceof Error ? err.message : "unknown";
-      Alert.alert(
-        "로그인 실패",
-        code === "invalid_credentials"
-          ? "이메일이나 비밀번호가 올바르지 않아요"
-          : code === "invalid_input"
-            ? "입력을 확인해주세요"
-            : "잠시 후 다시 시도해주세요"
-      );
+      if (code === "account_not_found") {
+        setEmailError("등록되지 않은 이메일이에요");
+        notify("이메일 확인 필요", "가입된 계정이 없어요.");
+      } else if (code === "wrong_password") {
+        setPasswordError("비밀번호가 일치하지 않아요");
+        notify("비밀번호 오류", "비밀번호를 다시 확인해주세요.");
+      } else if (code === "invalid_credentials") {
+        setPasswordError("이메일 또는 비밀번호가 올바르지 않아요");
+        notify("로그인 실패", "정보를 다시 확인해주세요.");
+      } else if (code === "invalid_input") {
+        notify("입력 오류", "이메일/비밀번호 형식을 확인해주세요.");
+      } else {
+        notify("로그인 실패", "잠시 후 다시 시도해주세요.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -52,28 +63,30 @@ export default function LoginScreen() {
         <View style={styles.inputWrap}>
           <TextInput
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => { setEmail(t); if (emailError !== null) setEmailError(null); }}
             placeholder="이메일"
             placeholderTextColor={colors.muted}
-            style={styles.input}
+            style={[styles.input, emailError !== null && styles.inputError]}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
           />
+          {emailError !== null && <Text style={styles.errorText}>{emailError}</Text>}
         </View>
 
         <View style={styles.inputWrap}>
           <TextInput
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(t) => { setPassword(t); if (passwordError !== null) setPasswordError(null); }}
             placeholder="비밀번호"
             placeholderTextColor={colors.muted}
-            style={[styles.input, styles.inputPr]}
+            style={[styles.input, styles.inputPr, passwordError !== null && styles.inputError]}
             secureTextEntry={!showPassword}
           />
           <Pressable onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
             <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={colors.muted} />
           </Pressable>
+          {passwordError !== null && <Text style={styles.errorText}>{passwordError}</Text>}
         </View>
       </View>
 
@@ -119,6 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 15
   },
   inputPr: { paddingRight: 48 },
+  inputError: { borderColor: colors.blush, backgroundColor: "#FFF6F7" },
+  errorText: { color: colors.blushDark, fontSize: 12, fontWeight: "700", marginTop: 6, marginLeft: 4 },
   eyeBtn: {
     position: "absolute",
     right: 14,

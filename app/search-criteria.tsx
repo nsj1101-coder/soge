@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Screen } from "@/components/Screen";
@@ -8,27 +9,22 @@ import { REGIONS } from "@/data/regions";
 import { useAppState } from "@/state/AppStateProvider";
 
 const GENDER_OPTIONS = ["여성", "남성"];
-const AGE_OPTIONS = ["20대 초반", "20대 후반", "30대 초반", "30대 후반", "40대 이상"];
 const PROVINCES = REGIONS.map((r) => r.province);
+const YEAR_MIN = 1960;
+const YEAR_MAX = 2010;
 
 export default function SearchCriteriaScreen() {
   const {
     selectedSearchGender,
     setSelectedSearchGender,
-    selectedSearchAgeRanges,
-    setSelectedSearchAgeRanges,
+    selectedSearchBirthYearMin,
+    setSelectedSearchBirthYearMin,
+    selectedSearchBirthYearMax,
+    setSelectedSearchBirthYearMax,
     selectedSearchRegions,
     setSelectedSearchRegions,
     selectedSearchValues
   } = useAppState();
-
-  const toggleAge = (age: string) => {
-    setSelectedSearchAgeRanges(
-      selectedSearchAgeRanges.includes(age)
-        ? selectedSearchAgeRanges.filter((a) => a !== age)
-        : [...selectedSearchAgeRanges, age]
-    );
-  };
 
   const toggleRegion = (province: string) => {
     setSelectedSearchRegions(
@@ -36,6 +32,17 @@ export default function SearchCriteriaScreen() {
         ? selectedSearchRegions.filter((r) => r !== province)
         : [...selectedSearchRegions, province]
     );
+  };
+
+  const onMinChange = (val: number) => {
+    const v = Math.round(val);
+    setSelectedSearchBirthYearMin(v);
+    if (v > selectedSearchBirthYearMax) setSelectedSearchBirthYearMax(v);
+  };
+  const onMaxChange = (val: number) => {
+    const v = Math.round(val);
+    setSelectedSearchBirthYearMax(v);
+    if (v < selectedSearchBirthYearMin) setSelectedSearchBirthYearMin(v);
   };
 
   return (
@@ -64,21 +71,39 @@ export default function SearchCriteriaScreen() {
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>나이대</Text>
-        <Text style={styles.sectionSub}>여러 개 선택 가능 · 선택 없으면 무관</Text>
-        <View style={styles.chipsRow}>
-          {AGE_OPTIONS.map((age) => {
-            const checked = selectedSearchAgeRanges.includes(age);
-            return (
-              <Pressable
-                key={age}
-                onPress={() => toggleAge(age)}
-                style={[styles.chip, checked && styles.chipChecked]}
-              >
-                <Text style={[styles.chipText, checked && styles.chipTextChecked]}>{age}</Text>
-              </Pressable>
-            );
-          })}
+        <Text style={styles.sectionTitle}>출생연도</Text>
+        <Text style={styles.sectionSub}>{selectedSearchBirthYearMin}년 ~ {selectedSearchBirthYearMax}년생</Text>
+        <View style={styles.sliderBlock}>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderLabel}>최소</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={YEAR_MIN}
+              maximumValue={YEAR_MAX}
+              step={1}
+              value={selectedSearchBirthYearMin}
+              onValueChange={onMinChange}
+              minimumTrackTintColor={colors.blush}
+              maximumTrackTintColor={colors.line}
+              thumbTintColor={colors.blush}
+            />
+            <Text style={styles.sliderVal}>{selectedSearchBirthYearMin}</Text>
+          </View>
+          <View style={styles.sliderRow}>
+            <Text style={styles.sliderLabel}>최대</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={YEAR_MIN}
+              maximumValue={YEAR_MAX}
+              step={1}
+              value={selectedSearchBirthYearMax}
+              onValueChange={onMaxChange}
+              minimumTrackTintColor={colors.blush}
+              maximumTrackTintColor={colors.line}
+              thumbTintColor={colors.blush}
+            />
+            <Text style={styles.sliderVal}>{selectedSearchBirthYearMax}</Text>
+          </View>
         </View>
 
         <Text style={styles.sectionTitle}>지역</Text>
@@ -125,11 +150,11 @@ export default function SearchCriteriaScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingHorizontal: 0, paddingTop: 16, paddingBottom: 16 },
+  screen: { paddingHorizontal: 0, paddingTop: 8, paddingBottom: 16 },
   headerWrap: { paddingHorizontal: 24 },
   content: { paddingHorizontal: 24, paddingBottom: 32, gap: 8 },
 
-  sectionTitle: { color: colors.ink, fontSize: 15, fontWeight: "800", marginTop: 12 },
+  sectionTitle: { color: colors.ink, fontSize: 15, fontWeight: "800", marginTop: 14 },
   sectionSub: { color: colors.muted, fontSize: 12, marginBottom: 2 },
 
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4, marginBottom: 6 },
@@ -144,6 +169,12 @@ const styles = StyleSheet.create({
   chipChecked: { borderColor: colors.blush, backgroundColor: colors.blushLight },
   chipText: { color: colors.body, fontSize: 13, fontWeight: "600" },
   chipTextChecked: { color: colors.blushDark, fontWeight: "800" },
+
+  sliderBlock: { gap: 6, marginTop: 4 },
+  sliderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sliderLabel: { color: colors.muted, fontSize: 12, fontWeight: "700", width: 32 },
+  slider: { flex: 1, height: 36 },
+  sliderVal: { color: colors.blushDark, fontSize: 13, fontWeight: "800", width: 48, textAlign: "right" },
 
   valuesPickerBtn: {
     flexDirection: "row",

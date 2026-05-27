@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BrandHeader } from "@/components/BrandHeader";
 import { Card } from "@/components/Card";
 import { FlowerBadge } from "@/components/FlowerBadge";
@@ -28,10 +29,20 @@ const MENU: MenuItem[] = [
 ];
 
 export default function ProfileScreen() {
-  const { profile, authUser, flowerCount, logOut } = useAppState();
+  const { profile, authUser, flowerCount, logOut, refreshAll } = useAppState();
+  const [refreshing, setRefreshing] = useState(false);
 
   const nickname = profile?.nickname ?? authUser?.nickname ?? "회원님";
   const initial = nickname.slice(0, 1);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshAll();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleLogout = async () => {
     if (await confirm("로그아웃", "로그아웃 할까요?", "로그아웃", true)) {
@@ -44,7 +55,11 @@ export default function ProfileScreen() {
     <Screen scroll={false} style={styles.screen}>
       <BrandHeader right={<FlowerBadge count={flowerCount} compact />} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.blush} />}
+      >
         <Card style={styles.userCard}>
           <View style={styles.avatar}>
             {profile?.photoUrl ? (

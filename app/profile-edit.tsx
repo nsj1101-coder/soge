@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -10,6 +9,7 @@ import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/colors";
 import { uploadPhoto } from "@/services/api";
 import { confirm, notify } from "@/services/confirm";
+import { pickImage } from "@/services/imagePicker";
 import { useAppState } from "@/state/AppStateProvider";
 
 const MAX_EXTRA = 5;
@@ -66,27 +66,11 @@ export default function ProfileEditScreen() {
   const pickPhoto = async () => {
     if (uploading) return;
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        notify("권한이 필요해요", "사진 접근 권한을 허용해주세요.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
-      setPhotoLocalUri(asset.uri);
+      const picked = await pickImage();
+      if (picked === null) return;
+      setPhotoLocalUri(picked.uri);
       setUploading(true);
-      const { url } = await uploadPhoto({
-        uri: asset.uri,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-        file: asset.file ?? null
-      });
+      const { url } = await uploadPhoto(picked);
       setPhotoUrl(url);
     } catch (err) {
       setPhotoLocalUri(null);
@@ -100,25 +84,9 @@ export default function ProfileEditScreen() {
     if (extraBusyIndex !== null) return;
     try {
       setExtraBusyIndex(index);
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        notify("권한이 필요해요", "사진 접근 권한을 허용해주세요.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
-      const { url } = await uploadPhoto({
-        uri: asset.uri,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-        file: asset.file ?? null
-      });
+      const picked = await pickImage();
+      if (picked === null) return;
+      const { url } = await uploadPhoto(picked);
       setExtraPhotos((current) => {
         const next = [...current];
         next[index] = url;

@@ -1,4 +1,5 @@
 import { Alert, Platform } from "react-native";
+import { toast } from "@/components/Toast";
 
 export const confirm = (
   title: string,
@@ -21,10 +22,10 @@ export const confirm = (
   });
 };
 
+const ERROR_HINTS = ["실패", "오류", "에러", "잠깐", "안 돼", "거절"];
+
 export const notify = (title: string, message?: string): void => {
-  if (Platform.OS === "web") {
-    window.alert(message === undefined ? title : `${title}\n\n${message}`);
-    return;
-  }
-  Alert.alert(title, message);
+  const text = message === undefined ? title : message;
+  const isError = ERROR_HINTS.some((hint) => title.includes(hint) || (message ?? "").includes(hint));
+  toast(text, isError ? "error" : "info");
 };

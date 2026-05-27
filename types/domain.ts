@@ -37,6 +37,7 @@ export type ValueAnswer = {
 
 export type Candidate = {
   id: string;
+  nickname: string;
   initial: string;
   ageRange: string;
   region: string;
@@ -48,6 +49,7 @@ export type Candidate = {
   valueImportant: string | null;
   dreamRelationship: string | null;
   photoUrl: string | null;
+  extraPhotoUrls: string[];
   matchRate?: number;
 };
 

@@ -98,11 +98,17 @@ export const uploadPhoto = async (asset: {
   const form = new FormData();
   const name = asset.fileName ?? "photo.jpg";
   const type = asset.mimeType ?? "image/jpeg";
+
   if (asset.file) {
     form.append("photo", asset.file, name);
+  } else if (asset.uri.startsWith("data:") || asset.uri.startsWith("blob:")) {
+    const blobRes = await fetch(asset.uri);
+    const blob = await blobRes.blob();
+    form.append("photo", blob, name);
   } else {
     form.append("photo", { uri: asset.uri, name, type } as unknown as Blob);
   }
+
   const response = await fetch(`${API_BASE_URL}/uploads-api/photo`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -154,7 +160,8 @@ export type SearchResponse = SearchSession | { status: "cooldown"; nextAvailable
 export type SearchInput = {
   selectedValues: string[];
   gender: string | null;
-  ageRanges: string[];
+  birthYearMin: number | null;
+  birthYearMax: number | null;
   regions: string[];
 };
 

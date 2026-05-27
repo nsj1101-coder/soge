@@ -3,6 +3,8 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ToastHost } from "@/components/Toast";
 import { AppStateProvider, useAppState } from "@/state/AppStateProvider";
 import { colors } from "@/constants/colors";
 
@@ -19,18 +21,20 @@ function AuthGate() {
 
   useEffect(() => {
     if (!ready) return;
-    const inTabs = segments[0] === "(tabs)";
-    const onOnboarding = segments[0] === "onboarding";
+    const root = segments[0];
+    const inTabs = root === "(tabs)";
+    const onOnboarding = root === "onboarding";
+    const onAuthFlow = root === "login" || root === "signup" || root === undefined;
 
     if (!isAuthenticated && inTabs) {
       router.replace("/");
       return;
     }
-    if (isAuthenticated && needsOnboarding && inTabs) {
+    if (isAuthenticated && needsOnboarding && (inTabs || onAuthFlow)) {
       router.replace("/onboarding");
       return;
     }
-    if (isAuthenticated && !needsOnboarding && onOnboarding) {
+    if (isAuthenticated && !needsOnboarding && (onOnboarding || onAuthFlow)) {
       router.replace("/(tabs)/search");
     }
   }, [ready, isAuthenticated, needsOnboarding, segments, router]);
@@ -59,6 +63,7 @@ function AuthGate() {
       <Stack.Screen name="account" />
       <Stack.Screen name="help" />
       <Stack.Screen name="onboarding" />
+      <Stack.Screen name="candidate/[id]" />
       <Stack.Screen name="(tabs)" />
     </Stack>
   );
@@ -67,14 +72,17 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <View style={styles.webBackdrop}>
-        <View style={styles.frame}>
-          <AppStateProvider>
-            <StatusBar style="dark" />
-            <AuthGate />
-          </AppStateProvider>
+      <SafeAreaProvider>
+        <View style={styles.webBackdrop}>
+          <View style={styles.frame}>
+            <AppStateProvider>
+              <StatusBar style="dark" />
+              <AuthGate />
+              <ToastHost />
+            </AppStateProvider>
+          </View>
         </View>
-      </View>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

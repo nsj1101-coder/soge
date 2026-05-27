@@ -28,9 +28,12 @@ export default function ChatDetailScreen() {
   );
 
   useEffect(() => {
-    if (match !== null) {
+    if (match === null) return;
+    void loadMessagesForMatch(match.id).catch(() => {});
+    const id = setInterval(() => {
       void loadMessagesForMatch(match.id).catch(() => {});
-    }
+    }, 3000);
+    return () => clearInterval(id);
   }, [match?.id, loadMessagesForMatch]);
 
   if (match === null) {
@@ -75,8 +78,8 @@ export default function ChatDetailScreen() {
             <Pressable onPress={() => setShowProfile(true)} style={styles.headerCenter}>
               <ProfileOrb initial={match.candidate.initial} size={34} />
               <View>
-                <Text style={styles.headerName}>{match.candidate.ageRange}</Text>
-                <Text style={styles.headerSub}>{match.candidate.region} · {match.candidate.job}</Text>
+                <Text style={styles.headerName}>{match.candidate.nickname}</Text>
+                <Text style={styles.headerSub}>{match.candidate.ageRange}{match.candidate.region ? ` · ${match.candidate.region}` : ""}</Text>
               </View>
             </Pressable>
             <Pressable onPress={() => setShowMenu(true)} style={styles.menuBtn}>
